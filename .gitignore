@@ -1,0 +1,9 @@
+# exclude generated packed rocks
+*.rock
+
+# OS stuff
+.DS_Store
+
+# exclude local configs
+.vscode/
+.pongo/
