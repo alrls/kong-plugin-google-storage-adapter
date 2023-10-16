@@ -1,10 +1,11 @@
-local get_path = require "kong.request.get_path"
-local get_raw_query = require "kong.request.get_raw_query"
-local set_path = require "kong.service.request.set_path"
-local set_header = require "kong.service.request.set_header"
 local openssl_hmac = require "resty.openssl.hmac"
 local sha256 = require "resty.sha256"
 local str = require "resty.string"
+
+local get_path = kong.request.get_path
+local get_raw_query = kong.request.get_raw_query
+local set_path = kong.service.request.set_path
+local set_header = kong.service.request.set_header
 
 local kong = kong
 
