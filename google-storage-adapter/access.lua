@@ -32,25 +32,24 @@ local function get_normalized_path()
   return path
 end
 
-local function transform_uri(conf)
-  if not conf.path_transformation.enable then
-    return
-  end
+local function create_canonical_request(conf, current_precise_date)
+  -- local path = get_normalized_path()
+  -- if not conf.path_transformation.enable then
+  --   path = get_path()
+  -- end
+  local path = get_path()
+  -- remove it 
+  kong.log.notice("DEBUG Final Path " .. path) 
 
-  set_path(get_normalized_path())
-end
-
-local function create_canonical_request(bucket_name, current_precise_date)
+  local bucket_name = conf.request_authentication.bucket_name
   local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
-
-  local path = get_normalized_path()
-  local query_string = get_raw_query()
-  kong.log.notice("Path " .. path .. " " .. get_path() .. query_string)
 
   local canonical_uri = path:gsub(KONG_SITES_PREFIX, "")
   local canonical_headers = 'host:' .. host .. "\n" ..
       'x-goog-content-sha256:' .. GCLOUD_UNSIGNED_PAYLOAD .. "\n" ..
       'x-goog-date:' .. current_precise_date
+
+  local query_string = get_raw_query()
 
   local canonical_request = GCLOUD_METHOD .. "\n" ..
       canonical_uri .. "\n" ..
@@ -58,6 +57,9 @@ local function create_canonical_request(bucket_name, current_precise_date)
       canonical_headers .. '\n\n' ..
       GCLOUD_SIGNED_HEADERS .. "\n" ..
       GCLOUD_UNSIGNED_PAYLOAD
+
+  -- remove it 
+  kong.log.notice("Can req" .. canonical_request) 
 
   local digest = sha256:new()
   digest:update(canonical_request)
@@ -85,7 +87,7 @@ local function do_authentication(conf)
 
   local credential_scope = current_date .. "/" .. GCLOUD_REGION .. "/" .. GCLOUD_SERVICE .. "/" .. GCLOUD_REQUEST_TYPE
 
-  local canonical_request_hex = create_canonical_request(conf.request_authentication.bucket_name, current_precise_date)
+  local canonical_request_hex = create_canonical_request(conf, current_precise_date)
   local string_to_sign = GCLOUD_SIGNING_ALGORITHM .. "\n" ..
       current_precise_date .. "\n" ..
       credential_scope .. "\n" ..
@@ -94,7 +96,7 @@ local function do_authentication(conf)
   local signing_key = create_signing_key(conf.request_authentication.secret, current_date)
   local signature_raw = openssl_hmac.new(signing_key, "sha256"):final(string_to_sign)
   local signature_hex = str.to_hex(signature_raw)
-  kong.log.notice("The signature has been created " .. signature_hex .. " with date " .. current_precise_date .. " with string-to-sign " .. string_to_sign) 
+  kong.log.notice("The signature has been created " .. signature_hex .. " with date " .. current_precise_date)
 
   local credential = conf.request_authentication.access_id .. "/" .. credential_scope
   local auth_header = GCLOUD_SIGNING_ALGORITHM .. " " ..
@@ -105,6 +107,13 @@ local function do_authentication(conf)
   set_header("authorization", auth_header)
   set_header("x-goog-date", current_precise_date)
   set_header("x-goog-content-sha256", GCLOUD_UNSIGNED_PAYLOAD)
+end
+
+local function transform_uri(conf)
+  if not conf.path_transformation.enable then
+    return
+  end
+  set_path(get_path())
 end
 
 function _M.execute(conf)
