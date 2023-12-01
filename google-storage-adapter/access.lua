@@ -43,9 +43,9 @@ end
 local function create_canonical_request(bucket_name, current_precise_date)
   local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
 
-  local path = get_normalized_path();
-  kong.log.notice("Path " .. path)
+  local path = get_normalized_path()
   local query_string = get_raw_query()
+  kong.log.notice("Path " .. path .. " " .. get_path() .. query_string)
 
   local canonical_uri = path:gsub(KONG_SITES_PREFIX, "")
   local canonical_headers = 'host:' .. host .. "\n" ..
@@ -94,7 +94,7 @@ local function do_authentication(conf)
   local signing_key = create_signing_key(conf.request_authentication.secret, current_date)
   local signature_raw = openssl_hmac.new(signing_key, "sha256"):final(string_to_sign)
   local signature_hex = str.to_hex(signature_raw)
-  kong.log.notice("The signature has been created" .. signature_hex .. "with date" .. current_precise_date)
+  kong.log.notice("The signature has been created " .. signature_hex .. " with date " .. current_precise_date .. " with string-to-sign " .. string_to_sign) 
 
   local credential = conf.request_authentication.access_id .. "/" .. credential_scope
   local auth_header = GCLOUD_SIGNING_ALGORITHM .. " " ..
@@ -108,8 +108,8 @@ local function do_authentication(conf)
 end
 
 function _M.execute(conf)
-  transform_uri(conf)
   do_authentication(conf)
+  transform_uri(conf)
 end
 
 return _M
