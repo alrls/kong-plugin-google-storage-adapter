@@ -22,23 +22,28 @@ local GCLOUD_UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD'
 
 local _M = {}
 
+local function get_normalized_path()
+  local path = get_path()
+  if string.match(path, "(.*)/$") then
+    return path .. "index.html"
+  elseif string.match(path, "(.*)/[^/.]+$") then
+    return path .. "/index.html"
+  end
+  return path
+end
+
 local function transform_uri(conf)
   if not conf.path_transformation.enable then
     return
   end
 
-  local path = get_path()
-  if string.match(path, "(.*)/$") then
-    set_path(path .. "index.html")
-  elseif string.match(path, "(.*)/[^/.]+$") then
-    set_path(path .. "/index.html")
-  end
+  set_path(get_normalized_path())
 end
 
 local function create_canonical_request(bucket_name, current_precise_date)
   local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
 
-  local path = get_path();
+  local path = get_normalized_path();
   kong.log.notice("Path " .. path)
   local query_string = get_raw_query()
 
