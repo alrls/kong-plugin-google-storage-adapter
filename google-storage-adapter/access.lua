@@ -29,16 +29,23 @@ local function transform_uri(conf)
 
   local path = get_path()
   if string.match(path, "(.*)/$") then
-    set_path(path .. "index.html")
+    path = path .. "index.html"
   elseif string.match(path, "(.*)/[^/.]+$") then
-    set_path(path .. "/index.html")
+    path = path .. "/index.html"
   end
+
+  set_path(path)
+  return path;
 end
 
-local function create_canonical_request(bucket_name, current_precise_date)
-  local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
+local function create_canonical_request(conf, current_precise_date)
+  local path = transform_uri(conf);
+  if not path then
+    path = get_path();
+  end
 
-  local path = get_path();
+  local bucket_name = conf.request_authentication.bucket_name
+  local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
   local query_string = get_raw_query()
 
   local canonical_uri = path:gsub(KONG_SITES_PREFIX, "")
@@ -79,7 +86,7 @@ local function do_authentication(conf)
 
   local credential_scope = current_date .. "/" .. GCLOUD_REGION .. "/" .. GCLOUD_SERVICE .. "/" .. GCLOUD_REQUEST_TYPE
 
-  local canonical_request_hex = create_canonical_request(conf.request_authentication.bucket_name, current_precise_date)
+  local canonical_request_hex = create_canonical_request(conf, current_precise_date)
   local string_to_sign = GCLOUD_SIGNING_ALGORITHM .. "\n" ..
       current_precise_date .. "\n" ..
       credential_scope .. "\n" ..
