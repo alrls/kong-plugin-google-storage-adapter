@@ -29,23 +29,17 @@ local function transform_uri(conf)
 
   local path = get_path()
   if string.match(path, "(.*)/$") then
-    path = path .. "index.html"
+    set_path(path .. "index.html")
   elseif string.match(path, "(.*)/[^/.]+$") then
-    path = path .. "/index.html"
+    set_path(path .. "/index.html")
   end
-
-  set_path(path)
-  return path;
 end
 
-local function create_canonical_request(conf, current_precise_date)
-  local path = transform_uri(conf);
-  if not path then
-    path = get_path();
-  end
-
-  local bucket_name = conf.request_authentication.bucket_name
+local function create_canonical_request(bucket_name, current_precise_date)
   local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
+
+  local path = get_path();
+  kong.log.notice("Path " .. path)
   local query_string = get_raw_query()
 
   local canonical_uri = path:gsub(KONG_SITES_PREFIX, "")
@@ -86,7 +80,7 @@ local function do_authentication(conf)
 
   local credential_scope = current_date .. "/" .. GCLOUD_REGION .. "/" .. GCLOUD_SERVICE .. "/" .. GCLOUD_REQUEST_TYPE
 
-  local canonical_request_hex = create_canonical_request(conf, current_precise_date)
+  local canonical_request_hex = create_canonical_request(conf.request_authentication.bucket_name, current_precise_date)
   local string_to_sign = GCLOUD_SIGNING_ALGORITHM .. "\n" ..
       current_precise_date .. "\n" ..
       credential_scope .. "\n" ..
@@ -95,7 +89,7 @@ local function do_authentication(conf)
   local signing_key = create_signing_key(conf.request_authentication.secret, current_date)
   local signature_raw = openssl_hmac.new(signing_key, "sha256"):final(string_to_sign)
   local signature_hex = str.to_hex(signature_raw)
-  kong.log.info("The signature has been created" .. signature_hex .. "with date" .. current_precise_date)
+  kong.log.notice("The signature has been created" .. signature_hex .. "with date" .. current_precise_date)
 
   local credential = conf.request_authentication.access_id .. "/" .. credential_scope
   local auth_header = GCLOUD_SIGNING_ALGORITHM .. " " ..
