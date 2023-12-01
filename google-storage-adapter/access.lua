@@ -22,6 +22,19 @@ local GCLOUD_UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD'
 
 local _M = {}
 
+local function transform_uri(conf)
+  if not conf.path_transformation.enable then
+    return
+  end
+
+  local path = get_path()
+  if string.match(path, "(.*)/$") then
+    set_path(path .. "index.html")
+  elseif string.match(path, "(.*)/[^/.]+$") then
+    set_path(path .. "/index.html")
+  end
+end
+
 local function create_canonical_request(bucket_name, current_precise_date)
   local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
 
@@ -88,22 +101,9 @@ local function do_authentication(conf)
   set_header("x-goog-content-sha256", GCLOUD_UNSIGNED_PAYLOAD)
 end
 
-local function transform_uri(conf)
-  if not conf.path_transformation.enable then
-    return
-  end
-
-  local path = get_path()
-  if string.match(path, "(.*)/$") then
-    set_path(path .. "index.html")
-  elseif string.match(path, "(.*)/[^/.]+$") then
-    set_path(path .. "/index.html")
-  end
-end
-
 function _M.execute(conf)
-  do_authentication(conf)
   transform_uri(conf)
+  do_authentication(conf)
 end
 
 return _M
