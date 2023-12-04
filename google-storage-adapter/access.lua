@@ -24,6 +24,7 @@ local _M = {}
 
 local function get_normalized_path()
   local path = get_path()
+  path = path:gsub(KONG_SITES_PREFIX, "")
   if string.match(path, "(.*)/$") then
     return path .. "index.html"
   elseif string.match(path, "(.*)/[^/.]+$") then
@@ -33,23 +34,20 @@ local function get_normalized_path()
 end
 
 local function create_canonical_request(conf, current_precise_date)
-  -- local path = get_normalized_path()
-  -- if not conf.path_transformation.enable then
-  --   path = get_path()
-  -- end
-  local path = get_path()
-  -- remove it 
-  kong.log.notice("DEBUG Final Path " .. path) 
+  local path = get_normalized_path()
+  if not conf.path_transformation.enable then
+    local path = get_path()
+    path = path:gsub(KONG_SITES_PREFIX, "")
+  end
 
   local bucket_name = conf.request_authentication.bucket_name
   local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
+  local query_string = get_raw_query()
 
-  local canonical_uri = path:gsub(KONG_SITES_PREFIX, "")
+  local canonical_uri = path
   local canonical_headers = 'host:' .. host .. "\n" ..
       'x-goog-content-sha256:' .. GCLOUD_UNSIGNED_PAYLOAD .. "\n" ..
       'x-goog-date:' .. current_precise_date
-
-  local query_string = get_raw_query()
 
   local canonical_request = GCLOUD_METHOD .. "\n" ..
       canonical_uri .. "\n" ..
@@ -57,9 +55,6 @@ local function create_canonical_request(conf, current_precise_date)
       canonical_headers .. '\n\n' ..
       GCLOUD_SIGNED_HEADERS .. "\n" ..
       GCLOUD_UNSIGNED_PAYLOAD
-
-  -- remove it 
-  kong.log.notice("Can req" .. canonical_request) 
 
   local digest = sha256:new()
   digest:update(canonical_request)
@@ -113,7 +108,7 @@ local function transform_uri(conf)
   if not conf.path_transformation.enable then
     return
   end
-  set_path(get_path())
+  set_path(get_normalized_path())
 end
 
 function _M.execute(conf)

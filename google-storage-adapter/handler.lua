@@ -10,12 +10,4 @@ function GoogleStorageAdapterHandler:access(conf)
   access.execute(conf)
 end
 
-function GoogleStorageAdapterHandler:response(conf)
-  local headers = kong.request.get_headers()
-  for k,v in pairs(headers) do
-    kong.log.notice(k .. v) 
-
-  end
-end
-
 return GoogleStorageAdapterHandler
