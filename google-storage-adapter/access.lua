@@ -25,7 +25,9 @@ local _M = {}
 local function get_normalized_path()
   local path = get_path()
   path = path:gsub(KONG_SITES_PREFIX, "")
-  if string.match(path, "(.*)/$") then
+  if string.match(path, "(.*)/index$") then
+    return path .. ".html"
+  elseif string.match(path, "(.*)/$") then
     return path .. "index.html"
   elseif string.match(path, "(.*)/[^/.]+$") then
     return path .. "/index.html"
