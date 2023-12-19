@@ -4,6 +4,7 @@ local str = require "resty.string"
 
 local get_path = kong.request.get_path
 local get_raw_query = kong.request.get_raw_query
+local get_service = kong.router.get_service
 local set_path = kong.service.request.set_path
 local set_header = kong.service.request.set_header
 
@@ -23,8 +24,15 @@ local GCLOUD_UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD'
 local _M = {}
 
 local function get_normalized_path()
+  local service = get_service()
+
   local path = get_path()
   path = path:gsub(KONG_SITES_PREFIX, "")
+
+  -- debug
+  kong.log.notice("Service path" .. service.path)
+  kong.log.notice("Req path" .. path)
+
   if string.match(path, "(.*)/index$") then
     return path .. ".html"
   elseif string.match(path, "(.*)/$") then
