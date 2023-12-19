@@ -2,7 +2,7 @@ local openssl_hmac = require "resty.openssl.hmac"
 local sha256 = require "resty.sha256"
 local str = require "resty.string"
 
-local get_path = kong.request.get_path
+local get_req_path = kong.request.get_path
 local get_raw_query = kong.request.get_raw_query
 local get_service = kong.router.get_service
 local set_path = kong.service.request.set_path
@@ -21,24 +21,38 @@ local GCLOUD_UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD'
 
 local _M = {}
 
-local function get_upstream_path()
+local function get_service_path()
   local service = get_service()
-  local path = service.path
-
-  if string.match(path, "(.*)/$") then
-    return path .. "index.html"
-  elseif string.match(path, "(.*)/[^/.]+$") then
-    return path .. "/index.html"
+  if service then
+    return service.path
   end
-  return path
+  return ""
+end
+
+local function get_normalized_path(conf)
+  local service_path = get_service_path()
+  -- if there's any override to a particular page (e.g. 403.html)
+  if string.match(service_path, "(.*).html$") then
+    return service_path
+  end
+
+  local req_path = get_req_path()
+  -- we have to remove prefix anyway
+  req_path = string.gsub(req_path, conf.path_transformation.prefix, "") 
+
+  if not conf.path_transformation.enabled then
+    return req_path
+  end
+
+  -- handle case when we have a trailing slash in the end of the path
+  if string.match(req_path, "(.*)/$") then
+    return req_path .. "index.html"
+  end
+  return req_path
 end
 
 local function create_canonical_request(conf, current_precise_date)
-  local path = get_upstream_path()
-  if not conf.path_transformation.enabled then
-    local service = get_service()
-    path = service.path
-  end
+  local path = get_normalized_path(conf)
 
   local bucket_name = conf.request_authentication.bucket_name
   local host = bucket_name .. "." .. GCLOUD_STORAGE_HOST
@@ -46,15 +60,15 @@ local function create_canonical_request(conf, current_precise_date)
 
   local canonical_uri = path
   local canonical_headers = 'host:' .. host .. "\n" ..
-      'x-goog-content-sha256:' .. GCLOUD_UNSIGNED_PAYLOAD .. "\n" ..
-      'x-goog-date:' .. current_precise_date
+    'x-goog-content-sha256:' .. GCLOUD_UNSIGNED_PAYLOAD .. "\n" ..
+    'x-goog-date:' .. current_precise_date
 
   local canonical_request = GCLOUD_METHOD .. "\n" ..
-      canonical_uri .. "\n" ..
-      query_string .. "\n" ..
-      canonical_headers .. '\n\n' ..
-      GCLOUD_SIGNED_HEADERS .. "\n" ..
-      GCLOUD_UNSIGNED_PAYLOAD
+    canonical_uri .. "\n" ..
+    query_string .. "\n" ..
+    canonical_headers .. '\n\n' ..
+    GCLOUD_SIGNED_HEADERS .. "\n" ..
+    GCLOUD_UNSIGNED_PAYLOAD
   
   return canonical_request
 end
@@ -89,23 +103,26 @@ local function do_authentication(conf)
   local canonical_request = create_canonical_request(conf, current_precise_date)
   local canonical_request_hex = create_hex_canonical_request(canonical_request)
   local string_to_sign = GCLOUD_SIGNING_ALGORITHM .. "\n" ..
-      current_precise_date .. "\n" ..
-      credential_scope .. "\n" ..
-      canonical_request_hex
+    current_precise_date .. "\n" ..
+    credential_scope .. "\n" ..
+    canonical_request_hex
 
   local signing_key = create_signing_key(conf.request_authentication.secret, current_date)
   local signature_raw = openssl_hmac.new(signing_key, "sha256"):final(string_to_sign)
   local signature_hex = str.to_hex(signature_raw)
 
   if conf.request_authentication.log then 
-    kong.log.notice("The signature has been created " .. signature_hex .. " with date " .. current_precise_date .. " for the request " .. canonical_request)
+    local log_message = "The signature has been created " .. signature_hex .. 
+      " with date " .. current_precise_date .. 
+      " for the request " .. canonical_request
+    kong.log.notice(log_message)
   end 
 
   local credential = conf.request_authentication.access_id .. "/" .. credential_scope
   local auth_header = GCLOUD_SIGNING_ALGORITHM .. " " ..
-      "Credential=" .. credential ..
-      ", SignedHeaders=" .. GCLOUD_SIGNED_HEADERS ..
-      ", Signature=" .. signature_hex
+    "Credential=" .. credential ..
+    ", SignedHeaders=" .. GCLOUD_SIGNED_HEADERS ..
+    ", Signature=" .. signature_hex
 
   set_header("authorization", auth_header)
   set_header("x-goog-date", current_precise_date)
@@ -117,12 +134,17 @@ local function transform_uri(conf)
     return
   end
 
-  local upstream_path = get_upstream_path()
-  local req_path = get_path()
-  if conf.path_transformation.log then 
-    kong.log.notice("The upstream path may be modifed. The request path " .. req_path .. ", the upstream path " .. upstream_path)
-  end 
-  set_path(upstream_path)
+  local service_path = get_service_path()
+  local req_path = get_req_path()
+  local normalized_path = get_normalized_path(conf)
+  if conf.path_transformation.log then
+    local log_message = "The upstream path may be modifed. The request path " .. req_path .. 
+      ", the service path " .. service_path .. 
+      ", the normalized path " .. normalized_path
+    kong.log.notice(log_message)
+  end
+
+  set_path(normalized_path)
 end
 
 function _M.execute(conf)
