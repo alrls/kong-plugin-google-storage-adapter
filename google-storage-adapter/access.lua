@@ -120,7 +120,7 @@ local function transform_uri(conf)
   local upstream_path = get_upstream_path()
   local req_path = get_path()
   if conf.path_transformation.log then 
-    kong.log.notice("The upstream path may be modifed. The request path " .. req_path .. ", the upstream path " upstream_path)
+    kong.log.notice("The upstream path may be modifed. The request path " .. req_path .. ", the upstream path " .. upstream_path)
   end 
   set_path(upstream_path)
 end
