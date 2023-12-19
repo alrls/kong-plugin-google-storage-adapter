@@ -37,7 +37,6 @@ local function get_normalized_path(conf)
   end
 
   local req_path = get_req_path()
-
   local prefix = conf.path_transformation.prefix
   if prefix then
     req_path = string.gsub(req_path, prefix, "") 
@@ -50,6 +49,8 @@ local function get_normalized_path(conf)
   -- handle case when we have a trailing slash in the end of the path
   if string.match(req_path, "(.*)/$") then
     return req_path .. "index.html"
+  elseif string.match(req_path, "(.*)/[^/.]+$") then
+    return req_path .. "/index.html"
   end
   return req_path
 end
