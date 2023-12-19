@@ -1,5 +1,5 @@
 package = "kong-plugin-google-storage-adapter"
-version = "1.4.0-0" 
+version = "1.4.1-0" 
 supported_platforms = {"linux", "macosx"}
 source = {
   url = "git://github.com/alrls/kong-plugin-google-storage-adapter",

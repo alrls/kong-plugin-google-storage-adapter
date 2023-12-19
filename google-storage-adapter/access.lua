@@ -37,8 +37,11 @@ local function get_normalized_path(conf)
   end
 
   local req_path = get_req_path()
-  -- we have to remove prefix anyway
-  req_path = string.gsub(req_path, conf.path_transformation.prefix, "") 
+
+  local prefix = conf.path_transformation.prefix
+  if prefix then
+    req_path = string.gsub(req_path, prefix, "") 
+  end
 
   if not conf.path_transformation.enabled then
     return req_path

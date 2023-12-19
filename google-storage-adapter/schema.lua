@@ -15,7 +15,7 @@ return {
               type = "record",
               fields = {
                 { enabled = { type = "boolean", required = true, default = true }, },
-                { prefix = { type = "string", required = true, default = "" }, },
+                { prefix = { type = "string", required = false }, },
                 { log = { type = "boolean", required = true, default = false }, },
               }
             }
