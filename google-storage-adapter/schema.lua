@@ -14,7 +14,8 @@ return {
             path_transformation = {
               type = "record",
               fields = {
-                { enable = { type = "boolean", required = true, default = true }, },
+                { enabled = { type = "boolean", required = true, default = true }, },
+                { log = { type = "boolean", required = true, default = false }, },
               }
             }
           },
@@ -22,7 +23,8 @@ return {
             request_authentication = {
               type = "record",
               fields = {
-                { enable = { type = "boolean", required = true, default = true }, },
+                { enabled = { type = "boolean", required = true, default = true }, },
+                { log = { type = "boolean", required = true, default = false }, },
                 { bucket_name = { type = "string", required = true }, },
                 { access_id = { type = "string", required = true }, },
                 { secret = { type = "string", required = true }, },
