@@ -30,6 +30,7 @@ local function get_service_path()
 end
 
 local function get_normalized_path(conf)
+  kong.log.notice('DEBUG 1.5.2')
   local captures = kong.request.get_uri_captures()
   for idx, value in ipairs(captures.unnamed) do
     kong.log.notice('unnamed' .. idx .. value)
