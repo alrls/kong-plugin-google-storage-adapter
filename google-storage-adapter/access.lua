@@ -30,7 +30,7 @@ local function get_service_path()
 end
 
 local function get_normalized_path(conf)
-  kong.log.notice('DEBUG 1.5.2')
+  kong.log.warn('DEBUG 1.5.2')
   local captures = kong.request.get_uri_captures()
   for idx, value in ipairs(captures.unnamed) do
     kong.log.notice('unnamed' .. idx .. value)
@@ -129,7 +129,7 @@ local function do_authentication(conf)
     local log_message = "The signature has been created " .. signature_hex .. 
       " with date " .. current_precise_date .. 
       " for the request " .. canonical_request
-    kong.log.notice(log_message)
+    -- kong.log.notice(log_message)
   end 
 
   local credential = conf.request_authentication.access_id .. "/" .. credential_scope
@@ -155,7 +155,7 @@ local function transform_uri(conf)
     local log_message = "The upstream path may be modifed. The request path " .. req_path .. 
       ", the service path " .. service_path .. 
       ", the normalized path " .. normalized_path
-    kong.log.notice(log_message)
+    -- kong.log.notice(log_message)
   end
 
   set_path(normalized_path)
