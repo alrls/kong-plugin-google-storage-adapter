@@ -152,6 +152,14 @@ local function transform_uri(conf)
 end
 
 function _M.execute(conf)
+  local captures = kong.request.get_uri_captures()
+  for idx, value in ipairs(captures.unnamed) do
+    kong.log.notice('unnamed' .. idx .. value)
+  end
+  for name, value in pairs(captures.named) do
+    kong.log.notice('named' .. idx .. value)
+  end
+
   do_authentication(conf)
   transform_uri(conf)
 end
