@@ -30,6 +30,15 @@ local function get_service_path()
 end
 
 local function get_normalized_path(conf)
+  local captures = kong.request.get_uri_captures()
+  for idx, value in ipairs(captures.unnamed) do
+    kong.log.notice('unnamed' .. idx .. value)
+  end
+  for name, value in pairs(captures.named) do
+    kong.log.notice('named' .. name .. value)
+  end
+
+
   local service_path = get_service_path()
   -- if there's any override to a particular page (e.g. 403.html)
   if string.match(service_path, "(.*).html$") then
@@ -152,14 +161,6 @@ local function transform_uri(conf)
 end
 
 function _M.execute(conf)
-  local captures = kong.request.get_uri_captures()
-  for idx, value in ipairs(captures.unnamed) do
-    kong.log.notice('unnamed' .. idx .. value)
-  end
-  for name, value in pairs(captures.named) do
-    kong.log.notice('named' .. idx .. value)
-  end
-
   do_authentication(conf)
   transform_uri(conf)
 end
