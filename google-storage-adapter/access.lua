@@ -34,6 +34,11 @@ local function get_normalized_path(conf)
   for idx, value in ipairs(route.paths) do
     kong.log.notice('routes' .. idx .. value)
   end
+  local forwarded_path = kong.request.get_forwarded_path()
+  kong.log.notice('forwarded_path', forwarded_path)
+
+  local forwarded_prefix = kong.request.get_forwarded_prefix()
+  kong.log.notice('forwarded_prefix', forwarded_prefix)
 
 
   local service_path = get_service_path()
