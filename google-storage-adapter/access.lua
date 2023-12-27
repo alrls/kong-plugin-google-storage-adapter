@@ -74,7 +74,7 @@ local function get_normalized_path(conf)
         ", the full path" .. full_path
       kong.log.notice(log_message)
     end
-    return full_path
+    return service_path .. locale .. file_name
   end
 end
 
