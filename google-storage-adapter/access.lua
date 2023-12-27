@@ -60,21 +60,22 @@ local function get_normalized_path(conf)
   local main_domain = req_path:match("^/[a-zA-Z0-9%-%_]+/?") or ""
   local locale = req_path:match("%l%l%-%u%u/?") or ""
   local file_name = req_path:match("[a-zA-Z0-9-_]*%.?[a-zA-Z0-9-_]+%.[a-zA-Z0-9-_]+$") or ""
-  local full_path = main_domain .. locale .. file_name
-  local is_one_page_site = full_path == req_path
+  local one_page_path = main_domain .. locale .. file_name
+  local is_one_page_site = one_page_path == req_path
 
   if is_one_page_site then
     return add_index_file_to_path(req_path)
   else
+    local full_path = service_path .. locale .. file_name
     if conf.path_transformation.log then
       local log_message = "Built path for the multipage site" ..
         ", the main domain " .. main_domain ..
         ", the locale path " .. locale ..
         ", the file name " .. file_name ..
-        ", the full path" .. full_path
+        ", the full path " .. full_path
       kong.log.notice(log_message)
     end
-    return service_path .. locale .. file_name
+    return add_index_file_to_path(full_path)
   end
 end
 
