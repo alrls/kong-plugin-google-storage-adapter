@@ -39,6 +39,10 @@ POST :8001/plugins
 			"enabled": true,
 			"log": true,
 			"prefix": "/sites"
+		},
+		"service_headers" : {
+			"enabled": true,
+			"log": true
 		}
 	},
 	"id": "04752261-8efd-4898-9cbc-84573e6c8ee6"

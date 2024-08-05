@@ -14,9 +14,9 @@ return {
             path_transformation = {
               type = "record",
               fields = {
-                { enabled = { type = "boolean", required = true, default = true }, },
-                { prefix = { type = "string", required = false }, },
-                { log = { type = "boolean", required = true, default = false }, },
+                { enabled = { type = "boolean", required = true, default = true } },
+                { log = { type = "boolean", required = true, default = false } },
+                { prefix = { type = "string", required = false } }
               }
             }
           },
@@ -24,11 +24,20 @@ return {
             request_authentication = {
               type = "record",
               fields = {
-                { enabled = { type = "boolean", required = true, default = true }, },
-                { log = { type = "boolean", required = true, default = false }, },
-                { bucket_name = { type = "string", required = true }, },
-                { access_id = { type = "string", required = true }, },
-                { secret = { type = "string", required = true }, },
+                { enabled = { type = "boolean", required = true, default = true } },
+                { log = { type = "boolean", required = true, default = false } },
+                { bucket_name = { type = "string", required = true } },
+                { access_id = { type = "string", required = true } },
+                { secret = { type = "string", required = true } }
+              }
+            }
+          },
+          {
+            service_headers = {
+              type = "record",
+              fields = {
+                { enabled = { type = "boolean", required = true, default = true } },
+                { log = { type = "boolean", required = true, default = false } }
               }
             }
           }

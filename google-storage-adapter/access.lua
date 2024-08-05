@@ -1,3 +1,4 @@
+local uuid = require "kong.tools.uuid".uuid
 local openssl_hmac = require "resty.openssl.hmac"
 local sha256 = require "resty.sha256"
 local str = require "resty.string"
@@ -166,8 +167,8 @@ local function transform_uri(conf)
   local req_path = get_req_path()
   local normalized_path = get_normalized_path(conf)
   if conf.path_transformation.log then
-    local log_message = "The upstream path may be modifed. The request path " .. req_path .. 
-      ", the service path " .. service_path .. 
+    local log_message = "The upstream path may be modifed. The request path " .. req_path ..
+      ", the service path " .. service_path ..
       ", the normalized path " .. normalized_path
     kong.log.notice(log_message)
   end
@@ -175,9 +176,47 @@ local function transform_uri(conf)
   set_path(normalized_path)
 end
 
+local function add_service_headers(conf)
+  if not conf.service_headers.enabled then
+    return
+  end
+
+  local request_id = kong.request.get_header("x-request-id")
+  if not request_id or request_id == "" then
+    request_id = uuid()
+  end
+
+  local geoip_country = kong.request.get_header("x-geoip-country")
+  if not geoip_country or geoip_country == "" then
+    geoip_country = 'US'
+  end
+
+  local geoip_region_code = kong.request.get_header("x-geoip-region-code")
+  if not geoip_region_code or geoip_region_code == "" then
+    geoip_region_code = 'CA'
+  end
+
+  kong.response.add_header("X-Request-Id", request_id)
+  kong.response.add_header("X-Geoip-Country", geoip_country)
+  kong.response.add_header("X-Geoip-Region-Code", geoip_region_code)
+
+  local set_cookie_value = "sb_country_code=" .. geoip_country ..
+    ";Path=/;Max-Age=600, sb_region_code=" .. geoip_region_code ..
+    ";Path=/;Max-Age=600"
+  kong.response.add_header("Set-Cookie", set_cookie_value)
+
+  if conf.service_headers.log then
+    local log_message = "The service headers has been added. The request-id " .. request_id ..
+      ", the geoip country " .. geoip_country ..
+      ", the geoip region code " .. geoip_region_code
+    kong.log.notice(log_message)
+  end
+end
+
 function _M.execute(conf)
   do_authentication(conf)
   transform_uri(conf)
+  add_service_headers(conf)
 end
 
 return _M
