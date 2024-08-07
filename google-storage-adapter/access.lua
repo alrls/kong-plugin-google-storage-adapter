@@ -1,4 +1,4 @@
-local uuid = require "kong.tools.uuid".uuid
+local uuid = require "resty.jit-uuid"
 local openssl_hmac = require "resty.openssl.hmac"
 local sha256 = require "resty.sha256"
 local str = require "resty.string"
@@ -183,7 +183,7 @@ local function add_service_headers(conf)
 
   local request_id = kong.request.get_header("x-request-id")
   if not request_id or request_id == "" then
-    request_id = uuid()
+    request_id = uuid.generate_v4()
   end
 
   local geoip_country = kong.request.get_header("x-geoip-country")
